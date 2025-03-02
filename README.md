@@ -1,2 +1,2 @@
 # cheatsheets
-Collection of cheatsheets, easy retrievable and structured.
+Collection of cheatsheets, easy retrievable and structured. And more
