@@ -1,0 +1,40 @@
+{
+  "cheatsheets": [
+    {
+      "name": "pandas_syntax_and_tricks",
+      "content": "# Pandas Syntax and Tricks\n...",
+      "categories": ["bash", "terminal"],  // Maintain for backward compatibility
+      "keyword_path": ["Computers", "Programming", "Python", "Python Libraries", "Data Processing", "Pandas"],
+      "description": "Helpful syntax examples and tricks for working with Pandas",
+      "created_at": "2025-03-16T12:00:00",
+      "updated_at": "2025-03-16T12:00:00"
+    }
+  ],
+  "keyword_taxonomy": {
+    "Computers": {
+      "Programming": {
+        "Python": {
+          "Python Libraries": {
+            "Data Processing": {
+              "Pandas": {},
+              "NumPy": {}
+            },
+            "Machine Learning": {
+              "scikit-learn": {},
+              "TensorFlow": {}
+            }
+          },
+          "Hacking": {
+            "Obfuscation": {},
+            "Reverse Shells": {}
+          }
+        },
+        "Rust": {
+          "Rust Libraries": {},
+          "Low-Level Memory Safety": {}
+        }
+      }
+    },
+    "Hardware": {}
+  }
+}
