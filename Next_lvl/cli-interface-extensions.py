@@ -1,9 +1,20 @@
-def parse_args():
+from __future__ import annotations
+
+import argparse
+import sys
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from cheatsheet_manager_updates import CheatSheetManager
+    from display_formatter_updates import DisplayFormatter
+
+
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments with support for hierarchical keywords."""
     parser = argparse.ArgumentParser(
         description="Manage a personal collection of text-based cheat sheets."
     )
-    
+
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
     
     # Add command
@@ -55,20 +66,94 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+# Placeholder classes for standalone file - in real usage, these would be imported
+class CheatSheetManager:
+    """Placeholder for CheatSheetManager."""
+
+    cheatsheets: dict[str, Any]
+
+    def __init__(self) -> None:
+        self.cheatsheets = {"cheatsheets": []}
+
+    def add_cheatsheet(
+        self,
+        name: str,
+        content: str,
+        categories: list[str],
+        keyword_path: Optional[list[str]],
+        description: Optional[str],
+    ) -> bool:
+        return True
+
+    def list_keywords(
+        self, path: Optional[list[str]], count: bool
+    ) -> dict[str, Any]:
+        return {}
+
+    def search_by_keyword_path(
+        self, path: list[str], exact_match: bool
+    ) -> list[dict[str, Any]]:
+        return []
+
+    def list_cheatsheets(self, category: Optional[str]) -> list[dict[str, Any]]:
+        return []
+
+    def search_cheatsheets(
+        self, query: str, path: Optional[list[str]]
+    ) -> list[dict[str, Any]]:
+        return []
+
+    def migrate_categories_to_paths(self, root: str) -> int:
+        return 0
+
+    def get_cheatsheet(self, name: str) -> Optional[dict[str, Any]]:
+        return None
+
+    def remove_cheatsheet(self, name: str) -> bool:
+        return True
+
+    def export_cheatsheet(self, name: str, file: Optional[str]) -> bool:
+        return True
+
+
+class DisplayFormatter:
+    """Placeholder for DisplayFormatter."""
+
+    @staticmethod
+    def format_keyword_tree(
+        path: Optional[list[str]], keywords: dict[str, Any]
+    ) -> str:
+        return ""
+
+    @staticmethod
+    def format_keyword_list(
+        path: Optional[list[str]], keywords: dict[str, Any]
+    ) -> str:
+        return ""
+
+    @staticmethod
+    def format_cheatsheet_list(cheatsheets: list[dict[str, Any]]) -> str:
+        return ""
+
+    @staticmethod
+    def format_cheatsheet_content(cheatsheet: Optional[dict[str, Any]]) -> str:
+        return ""
+
+
+def main() -> int:
     """Main function to handle command line interface."""
     args = parse_args()
-    
+
     if not args.command:
         print("Error: No command specified. Use --help for available commands.")
         return 1
-        
+
     manager = CheatSheetManager()
     formatter = DisplayFormatter()
     
     if args.command == "add":
         # Read content from file or stdin
-        content = ""
+        content: str = ""
         if args.file:
             try:
                 with open(args.file, "r") as f:
@@ -82,49 +167,53 @@ def main():
             except Exception as e:
                 print(f"Error reading from stdin: {str(e)}")
                 return 1
-                
+
         # Parse categories (legacy)
-        categories = []
+        categories: list[str] = []
         if args.categories:
             categories = [cat.strip() for cat in args.categories.split(",")]
-            
+
         # Parse hierarchical keywords
-        keyword_path = None
+        keyword_path: Optional[list[str]] = None
         if args.keywords:
             keyword_path = [kw.strip() for kw in args.keywords.split(",")]
-            
+
         # Add the cheat sheet
-        success = manager.add_cheatsheet(
+        success: bool = manager.add_cheatsheet(
             args.name, content, categories, keyword_path, args.description
         )
-        
+
         if success:
             print(f"Cheat sheet '{args.name}' added successfully.")
         return 0 if success else 1
-    
+
     elif args.command == "keywords":
         # Parse the keyword path
-        path = None
+        path: Optional[list[str]] = None
         if args.path:
             path = [kw.strip() for kw in args.path.split(",")]
-            
+
         # Handle rename operation
         if args.rename:
+            old_kw: str
+            new_kw: str
             old_kw, new_kw = args.rename
             # Implementation of rename would go here
             print(f"Renamed keyword '{old_kw}' to '{new_kw}'")
             return 0
-            
+
         # Handle merge operation
         if args.merge:
+            source_kw: str
+            target_kw: str
             source_kw, target_kw = args.merge
             # Implementation of merge would go here
             print(f"Merged keyword '{source_kw}' into '{target_kw}'")
             return 0
-            
+
         # List keywords
-        keywords = manager.list_keywords(path, args.count)
-        
+        keywords: dict[str, Any] = manager.list_keywords(path, args.count)
+
         if args.tree:
             # Display as a tree
             print(formatter.format_keyword_tree(path, keywords))
@@ -134,65 +223,77 @@ def main():
         return 0
         
     elif args.command == "list":
+        cheatsheets: list[dict[str, Any]]
         if args.keywords:
             # Parse the keyword path
-            keyword_path = [kw.strip() for kw in args.keywords.split(",")]
-            cheatsheets = manager.search_by_keyword_path(keyword_path, exact_match=False)
+            list_keyword_path: list[str] = [
+                kw.strip() for kw in args.keywords.split(",")
+            ]
+            cheatsheets = manager.search_by_keyword_path(
+                list_keyword_path, exact_match=False
+            )
         else:
             # Legacy category filtering
             cheatsheets = manager.list_cheatsheets(args.category)
-            
+
         print(formatter.format_cheatsheet_list(cheatsheets))
         return 0
-        
+
     elif args.command == "search":
         # Parse the keyword path for filtering
-        keyword_path = None
+        search_keyword_path: Optional[list[str]] = None
         if args.keywords:
-            keyword_path = [kw.strip() for kw in args.keywords.split(",")]
-            
-        results = manager.search_cheatsheets(args.query, keyword_path)
+            search_keyword_path = [kw.strip() for kw in args.keywords.split(",")]
+
+        results: list[dict[str, Any]] = manager.search_cheatsheets(
+            args.query, search_keyword_path
+        )
         if not results:
             print(f"No cheat sheets found matching '{args.query}'.")
             return 0
-            
+
         print(f"Found {len(results)} cheat sheet(s) matching '{args.query}':")
         print(formatter.format_cheatsheet_list(results))
         return 0
-    
+
     elif args.command == "migrate":
+        migrated: int
         if args.dry_run:
             # Count how many would be migrated without making changes
             migrated = 0
             for cs in manager.cheatsheets["cheatsheets"]:
                 if "keyword_path" not in cs and cs["categories"]:
                     migrated += 1
-                    print(f"Would migrate: {cs['name']} -> {args.root},{cs['categories'][0]}")
+                    print(
+                        f"Would migrate: {cs['name']} -> {args.root},{cs['categories'][0]}"
+                    )
             print(f"Would migrate {migrated} cheat sheet(s).")
         else:
             # Actually perform the migration
             migrated = manager.migrate_categories_to_paths(args.root)
             print(f"Migrated {migrated} cheat sheet(s) from categories to keyword paths.")
         return 0
-    
+
     # Other commands remain the same...
     elif args.command == "show":
-        cheatsheet = manager.get_cheatsheet(args.name)
+        cheatsheet: Optional[dict[str, Any]] = manager.get_cheatsheet(args.name)
         if not cheatsheet:
             print(f"Error: Cheat sheet '{args.name}' not found.")
             return 1
-            
+
         print(formatter.format_cheatsheet_content(cheatsheet))
         return 0
-        
+
     elif args.command == "remove":
-        success = manager.remove_cheatsheet(args.name)
-        if success:
+        remove_success: bool = manager.remove_cheatsheet(args.name)
+        if remove_success:
             print(f"Cheat sheet '{args.name}' removed successfully.")
-        return 0 if success else 1
-        
+        return 0 if remove_success else 1
+
     elif args.command == "export":
-        success = manager.export_cheatsheet(args.name, args.file)
-        if success and args.file:
+        export_success: bool = manager.export_cheatsheet(args.name, args.file)
+        if export_success and args.file:
             print(f"Cheat sheet '{args.name}' exported to '{args.file}' successfully.")
-        return 0 if success else 1
+        return 0 if export_success else 1
+
+    return 0

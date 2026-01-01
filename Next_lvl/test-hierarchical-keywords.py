@@ -2,17 +2,27 @@
 """
 Tests for the cheat sheet CLI tool with hierarchical keywords support.
 """
-import unittest
-import os
+from __future__ import annotations
+
 import json
-import tempfile
+import os
 import shutil
+import tempfile
+import unittest
+from typing import Any, Optional
+
 from cheatsheet import CheatSheetManager
+
 
 class TestHierarchicalKeywords(unittest.TestCase):
     """Test cases for hierarchical keywords functionality."""
-    
-    def setUp(self):
+
+    temp_dir: str
+    storage_path: str
+    test_data: dict[str, Any]
+    manager: CheatSheetManager
+
+    def setUp(self) -> None:
         """Set up test environment with a temporary storage file."""
         self.temp_dir = tempfile.mkdtemp()
         self.storage_path = os.path.join(self.temp_dir, "test_cheatsheets.json")
@@ -63,91 +73,105 @@ class TestHierarchicalKeywords(unittest.TestCase):
         
         with open(self.storage_path, "w") as f:
             json.dump(self.test_data, f)
-            
+
         self.manager = CheatSheetManager(self.storage_path)
-        
-    def tearDown(self):
+
+    def tearDown(self) -> None:
         """Clean up temporary directory."""
         shutil.rmtree(self.temp_dir)
-    
-    def test_keyword_path_exists(self):
+
+    def test_keyword_path_exists(self) -> None:
         """Test that keyword paths are correctly loaded."""
-        cheatsheet = self.manager.get_cheatsheet("test1")
+        cheatsheet: Optional[dict[str, Any]] = self.manager.get_cheatsheet("test1")
+        assert cheatsheet is not None
         self.assertIn("keyword_path", cheatsheet)
-        self.assertEqual(cheatsheet["keyword_path"], ["Computers", "Programming", "Python", "Testing"])
-    
-    def test_search_by_keyword_path_exact(self):
+        self.assertEqual(
+            cheatsheet["keyword_path"],
+            ["Computers", "Programming", "Python", "Testing"],
+        )
+
+    def test_search_by_keyword_path_exact(self) -> None:
         """Test searching by exact keyword path."""
-        results = self.manager.search_by_keyword_path(
-            ["Computers", "Programming", "Python", "Testing"], 
-            exact_match=True
+        results: list[dict[str, Any]] = self.manager.search_by_keyword_path(
+            ["Computers", "Programming", "Python", "Testing"],
+            exact_match=True,
         )
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["name"], "test1")
-    
-    def test_search_by_keyword_path_prefix(self):
+
+    def test_search_by_keyword_path_prefix(self) -> None:
         """Test searching by keyword path prefix."""
-        results = self.manager.search_by_keyword_path(
-            ["Computers", "Programming"], 
-            exact_match=False
+        results: list[dict[str, Any]] = self.manager.search_by_keyword_path(
+            ["Computers", "Programming"],
+            exact_match=False,
         )
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["name"], "test1")
-    
-    def test_get_keyword_children(self):
+
+    def test_get_keyword_children(self) -> None:
         """Test getting children of a keyword path."""
-        children = self.manager.get_keyword_children(["Computers", "Programming"])
+        children: list[str] = self.manager.get_keyword_children(
+            ["Computers", "Programming"]
+        )
         self.assertEqual(children, ["Python"])
-    
-    def test_add_cheatsheet_with_keyword_path(self):
+
+    def test_add_cheatsheet_with_keyword_path(self) -> None:
         """Test adding a cheatsheet with a keyword path."""
         self.manager.add_cheatsheet(
-            "test4", 
-            "Test content 4", 
+            "test4",
+            "Test content 4",
             ["rust", "programming"],
             ["Computers", "Programming", "Rust"],
-            "Test cheatsheet 4"
+            "Test cheatsheet 4",
         )
-        
+
         # Check that the cheatsheet was added
-        cheatsheet = self.manager.get_cheatsheet("test4")
+        cheatsheet: Optional[dict[str, Any]] = self.manager.get_cheatsheet("test4")
         self.assertIsNotNone(cheatsheet)
+        assert cheatsheet is not None
         self.assertEqual(cheatsheet["keyword_path"], ["Computers", "Programming", "Rust"])
-        
+
         # Check that the path was added to the taxonomy
-        children = self.manager.get_keyword_children(["Computers", "Programming"])
+        children: list[str] = self.manager.get_keyword_children(
+            ["Computers", "Programming"]
+        )
         self.assertIn("Rust", children)
-    
-    def test_migrate_categories_to_paths(self):
+
+    def test_migrate_categories_to_paths(self) -> None:
         """Test migrating categories to keyword paths."""
         # Before migration, test3 doesn't have a keyword path
-        cheatsheet = self.manager.get_cheatsheet("test3")
+        cheatsheet: Optional[dict[str, Any]] = self.manager.get_cheatsheet("test3")
+        assert cheatsheet is not None
         self.assertNotIn("keyword_path", cheatsheet)
-        
+
         # Perform migration
-        migrated = self.manager.migrate_categories_to_paths("Uncategorized")
+        migrated: int = self.manager.migrate_categories_to_paths("Uncategorized")
         self.assertEqual(migrated, 1)
-        
+
         # After migration, test3 should have a keyword path
         cheatsheet = self.manager.get_cheatsheet("test3")
+        assert cheatsheet is not None
         self.assertIn("keyword_path", cheatsheet)
         self.assertEqual(cheatsheet["keyword_path"], ["Uncategorized", "git"])
-    
-    def test_search_with_keyword_path_filter(self):
+
+    def test_search_with_keyword_path_filter(self) -> None:
         """Test searching with a keyword path filter."""
         # Add another cheatsheet with Python in the content
         self.manager.add_cheatsheet(
-            "test5", 
-            "Python content but in a different path", 
+            "test5",
+            "Python content but in a different path",
             ["docs"],
             ["Documents", "Programming", "Python"],
-            "Test cheatsheet 5"
+            "Test cheatsheet 5",
         )
-        
+
         # Search for "Python" with a path filter
-        results = self.manager.search_cheatsheets("Python", ["Computers"])
+        results: list[dict[str, Any]] = self.manager.search_cheatsheets(
+            "Python", ["Computers"]
+        )
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["name"], "test1")
+
 
 if __name__ == "__main__":
     unittest.main()

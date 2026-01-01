@@ -1,13 +1,25 @@
+from __future__ import annotations
+
+import re
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from cheatsheet_manager_updates import CheatSheetManager
+
+# Type alias for search index
+SearchIndex = dict[str, set[int]]
 
 
 class SearchEngine:
     """Advanced search capabilities for the cheatsheet manager."""
 
-    def __init__(self, manager):
+    manager: CheatSheetManager
+
+    def __init__(self, manager: CheatSheetManager) -> None:
         """Initialize with a CheatSheetManager instance."""
         self.manager = manager
 
-    def _tokenize(self, text):
+    def _tokenize(self, text: str) -> list[str]:
         """Split text into tokens, removing common punctuation."""
         if not text:
             return []
@@ -15,9 +27,9 @@ class SearchEngine:
         tokens = re.sub(r'[^\w\s]', ' ', text.lower()).split()
         return [token for token in tokens if token]
 
-    def _create_index(self):
+    def _create_index(self) -> SearchIndex:
         """Create an inverted index for faster text searches."""
-        index = {}
+        index: SearchIndex = {}
         
         for i, cs in enumerate(self.manager.cheatsheets["cheatsheets"]):
             # Index the name
@@ -52,64 +64,72 @@ class SearchEngine:
                 if token not in index:
                     index[token] = set()
                 index[token].add(i)
-                
+
         return index
 
-    def fuzzy_search(self, query, threshold=0.7):
+    def fuzzy_search(
+        self, query: str, threshold: float = 0.7
+    ) -> list[dict[str, Any]]:
         """
         Perform fuzzy matching search on cheatsheet metadata.
-        
+
         Args:
-            query (str): The search query
-            threshold (float): Similarity threshold (0.0 to 1.0)
-            
+            query: The search query
+            threshold: Similarity threshold (0.0 to 1.0)
+
         Returns:
-            list: Cheatsheets that match the query with similarity above threshold
+            Cheatsheets that match the query with similarity above threshold
         """
         from difflib import SequenceMatcher
-        
-        results = []
+
+        results: list[tuple[dict[str, Any], float]] = []
         query = query.lower()
-        
+
         for cs in self.manager.cheatsheets["cheatsheets"]:
             # Check name similarity
-            name_similarity = SequenceMatcher(None, query, cs["name"].lower()).ratio()
-            
+            name_similarity: float = SequenceMatcher(
+                None, query, cs["name"].lower()
+            ).ratio()
+
             # Check category similarity
-            category_similarity = 0
+            category_similarity: float = 0
             for category in cs["categories"]:
-                similarity = SequenceMatcher(None, query, category.lower()).ratio()
+                similarity: float = SequenceMatcher(
+                    None, query, category.lower()
+                ).ratio()
                 category_similarity = max(category_similarity, similarity)
-                
+
             # Check keyword path similarity
-            path_similarity = 0
+            path_similarity: float = 0
             if "keyword_path" in cs:
                 for keyword in cs["keyword_path"]:
                     similarity = SequenceMatcher(None, query, keyword.lower()).ratio()
                     path_similarity = max(path_similarity, similarity)
-            
+
             # Take the maximum similarity
             max_similarity = max(name_similarity, category_similarity, path_similarity)
-            
+
             if max_similarity >= threshold:
                 results.append((cs, max_similarity))
-                
+
         # Sort by similarity score descending
         results.sort(key=lambda x: x[1], reverse=True)
-        
+
         # Return just the cheatsheets
         return [result[0] for result in results]
 
-    def semantic_search(self, query, keyword_path=None):
+    def semantic_search(
+        self, query: str, keyword_path: Optional[list[str]] = None
+    ) -> list[dict[str, Any]]:
         """
         Perform semantic search using TF-IDF weighting.
-        
+
         Args:
-            query (str): The search query
-            keyword_path (list): Optional path to restrict search to
-            
+            query: The search query
+            keyword_path: Optional path to restrict search to
+
         Returns:
-            list: Ranked list of cheatsheets matching the query
+            Ranked list of cheatsheets matching the query
         """
         # First filter by keyword path if provided
         if keyword_path:
@@ -163,41 +183,45 @@ class SearchEngine:
             print("Warning: sklearn not available, falling back to basic search")
             return self.basic_search(query, keyword_path)
 
-    def basic_search(self, query, keyword_path=None):
+    def basic_search(
+        self, query: str, keyword_path: Optional[list[str]] = None
+    ) -> list[dict[str, Any]]:
         """
         Perform basic keyword search.
-        
+
         Args:
-            query (str): The search query
-            keyword_path (list): Optional path to restrict search to
-            
+            query: The search query
+            keyword_path: Optional path to restrict search to
+
         Returns:
-            list: List of cheatsheets matching the query
+            List of cheatsheets matching the query
         """
         # This is just a wrapper around the manager's search_cheatsheets
         return self.manager.search_cheatsheets(query, keyword_path)
 
-    def full_text_search(self, query, keyword_path=None):
+    def full_text_search(
+        self, query: str, keyword_path: Optional[list[str]] = None
+    ) -> list[dict[str, Any]]:
         """
         Perform full text search using inverted index for speed.
-        
+
         Args:
-            query (str): The search query
-            keyword_path (list): Optional path to restrict search to
-            
+            query: The search query
+            keyword_path: Optional path to restrict search to
+
         Returns:
-            list: List of cheatsheets matching all query terms
+            List of cheatsheets matching all query terms
         """
         # Tokenize the query
         query_tokens = self._tokenize(query)
         if not query_tokens:
             return []
-            
+
         # Create inverted index
         index = self._create_index()
-        
+
         # Find documents that contain all query tokens
-        matching_docs = None
+        matching_docs: Optional[set[int]] = None
         for token in query_tokens:
             if token in index:
                 if matching_docs is None:
@@ -207,17 +231,22 @@ class SearchEngine:
             else:
                 # If any token is not in the index, no documents will match
                 return []
-                
+
         if matching_docs is None:
             return []
-            
+
         # Convert matching document indices to cheatsheets
-        results = [self.manager.cheatsheets["cheatsheets"][i] for i in matching_docs]
-        
+        results: list[dict[str, Any]] = [
+            self.manager.cheatsheets["cheatsheets"][i] for i in matching_docs
+        ]
+
         # Filter by keyword path if provided
         if keyword_path:
-            results = [cs for cs in results if 
-                       "keyword_path" in cs and 
-                       self.manager._is_prefix(keyword_path, cs["keyword_path"])]
-            
+            results = [
+                cs
+                for cs in results
+                if "keyword_path" in cs
+                and self.manager._is_prefix(keyword_path, cs["keyword_path"])
+            ]
+
         return results
